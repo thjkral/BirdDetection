@@ -1,9 +1,13 @@
-
-INSERT INTO Species VALUES ('KLM', 'Koolmees', 'Great Tit', 'Parus', 'major');
-INSERT INTO Species VALUES ('PPM', 'Pimpelmees', 'Eurasian Blue Tit', 'Cyanistes', 'caeruleus');
+INSERT INTO Species VALUES ('HSM', 'Huismus', 'House sparrow', 'Passer', 'domesticus');
+INSERT INTO Species VALUES ('KLM', 'Koolmees', 'Great tit', 'Parus', 'major');
+INSERT INTO Species VALUES ('PPM', 'Pimpelmees', 'Eurasian blue tit', 'Cyanistes', 'caeruleus');
+INSERT INTO Species VALUES ('MRL', 'Merel', 'Common blackbird', 'Turdus', 'merula');
+INSERT INTO Species VALUES ('EKT', 'Ekster', 'Eurasian magpie', 'Pica', 'pica');
+INSERT INTO Species VALUES ('VNK', 'Vink', 'Common chaffinch', 'Fringilla', 'coelebs');
+INSERT INTO Species VALUES ('KAW', 'Kauw', 'Western jackdaw', 'Coloeus', 'monedula');
 INSERT INTO Species VALUES ('RDB', 'Roodborst', 'European Robin', 'Erithacus', 'rubecula');
-INSERT INTO Species VALUES ('HSM', 'Huismus', 'House Sparrow', 'Passer', 'domesticus');
-INSERT INTO Species VALUES ();
-INSERT INTO Species VALUES ();
-INSERT INTO Species VALUES ();
-
+INSERT INTO Species VALUES ('ZKR', 'Zwarte kraai', 'Carrion crow', 'Corvus', 'corone');
+INSERT INTO Species VALUES ('HDF', 'Houtduif', 'Common wood pigeon', 'Columba', 'palumbus');
+INSERT INTO Species VALUES ('WKN', 'Winterkoning', 'Eurasian wren', 'Troglodytes', 'troglodytes');
+INSERT INTO Species VALUES ('HZW', 'Huiszwaluw', 'Common house martin', 'Delichon', 'urbicum');
+INSERT INTO Species VALUES ('BZW', 'Boerenzwaluw', 'Barn swallow', 'Hirundo', 'rustica');

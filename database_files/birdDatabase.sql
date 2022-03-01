@@ -27,7 +27,7 @@ CREATE TABLE Visit(
 	Visits by birds during the day. Combines data from different tables
 	*/
 
-	id INT NOT NULL	AUTO_INCREMENT,
+	id INT NOT NULL,
 	species VARCHAR(50),
 	day DATE,
 	arrival TIME,
