@@ -33,14 +33,14 @@ CREATE TABLE Visit(
 	arrival TIME,
 	departure TIME,
 	visit_len INT,
-	accuracy DOUBLE(3,2),
+	accuracy DECIMAL(5, 2),
 
 	PRIMARY KEY(id),
 	FOREIGN KEY(species) REFERENCES Species(id)
 );
 
 
-CREATE TABLE Images(
+CREATE TABLE Image(
 	/*
 	Holds all pictures of birds
 	*/
@@ -48,6 +48,7 @@ CREATE TABLE Images(
 	id INT 	NOT NULL AUTO_INCREMENT,
 	image_name TINYTEXT,
 	capture_day DATETIME,
+	accuracy DECIMAL(5, 2),
 	species VARCHAR(50),
 	visit_id INT,
 

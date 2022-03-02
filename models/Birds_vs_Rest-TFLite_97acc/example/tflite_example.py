@@ -108,18 +108,18 @@ class TFLiteModel:
         return sorted_output
 
 
-if __name__ == "__main__":
+def classify(filePath):
     parser = argparse.ArgumentParser(description="Predict a label for an image.")
     parser.add_argument("image", help="Path to your image file.")
     args = parser.parse_args()
     # Assume model is in the parent directory for this file
-    model_dir = os.path.join(os.getcwd(), "..")
+    model_dir = os.path("/home/tom/Projects/Bird Detection/models/Birds_vs_Rest-TFLite_97acc/")
 
-    if os.path.isfile(args.image):
-        image = Image.open(args.image)
+    if os.path.isfile(filePath):
+        image = Image.open(filePath)
         model = TFLiteModel(model_dir)
         model.load()
         outputs = model.predict(image)
         print(f"Predicted: {outputs}")
     else:
-        print(f"Couldn't find image file {args.image}")
+        print(f"Couldn't find image file {filePath}")
