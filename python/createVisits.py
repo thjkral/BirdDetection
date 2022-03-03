@@ -84,7 +84,7 @@ visitList = []
 for i, elem in enumerate(selectResult):
     
     
-    if (i < (len(selectResult)-1)):    
+    if (i < (len(selectResult)-1)):
         
         timeOne = selectResult[i][1]
         timeTwo = selectResult[i+1][1]
@@ -106,7 +106,6 @@ for i, elem in enumerate(selectResult):
             currentId += 1 # Advance one ID
             
     else:
-        
         timeOne = selectResult[i][1]
         timeTwo = selectResult[i-1][1]
         
@@ -115,7 +114,13 @@ for i, elem in enumerate(selectResult):
         
         if diff <= 20.0:
             visitList.append(selectResult[i])
+            
+            makeVisit(visitList)
+            
+            for j in visitList:
+                updateImageInfo(j)
         else:
+            currentId += 1
             visitList = []
             visitList.append(selectResult[i])
             
