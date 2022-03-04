@@ -1,4 +1,6 @@
 python/tmp/
 python/__pycache__/
+python/databaseConnector.py
+
 pi-timolo-master/
 

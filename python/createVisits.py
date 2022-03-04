@@ -10,19 +10,13 @@ Created on Sat Feb 26 13:23:00 2022
 import mysql.connector
 import datetime
 
-'''
-Connect to the database with local credentials
-'''
-db = mysql.connector.connect(host='localhost',
-                        database='birdDatabase',
-                        user='root',
-                        password='db')
+import databaseConnector
 
+db = databaseConnector.makeConnection()
 
 def getCurrentId():
-    '''
-    Gets the next ID from the Visit table
-    '''
+    ''' Gets the next ID from the Visit table '''
+    
     idQuery = 'SELECT MAX(id) FROM Visit;'
     idCursor = db.cursor()
     idCursor.execute(idQuery)
@@ -38,9 +32,8 @@ def getCurrentId():
 
 
 def makeVisit(visitList):
-    '''
-    Makes a new visit and writes it to the database. Should be called before updating the image!
-    '''
+    ''' Makes a new visit and writes it to the database. Should be called before updating the image! '''
+
     arrival = visitList[0][1]
     departure = visitList[-1][1]    
     visit_len = (departure - arrival).total_seconds()
@@ -56,9 +49,7 @@ def makeVisit(visitList):
 
 
 def updateImageInfo(row_id):
-    '''
-    Assigns a visit ID to the images grouped as a visit.
-    '''
+    ''' Assigns a visit ID to the images grouped as a visit. '''
     
     print(f"Updating image {row_id[0]} with visit_id {currentId}")
     

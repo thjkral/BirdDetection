@@ -12,15 +12,7 @@ import os
 import datetime
 import time
 
-
-def makeConnection():
-    '''Open the connection to the database'''
-    
-    connection = mysql.connector.connect(host='localhost',
-                            database='birdDatabase',
-                            user='root',
-                            password='db')
-    return connection
+import databaseConnector
 
 
 def renameAndMove(filePath):
@@ -41,7 +33,7 @@ def write(filePath, accuracy):
     '''Writes a file to the database'''
     
     # Start database connection
-    db = makeConnection()
+    db = databaseConnector.makeConnection()
     
     # Get the filename
     fileName = os.path.basename(filePath)
