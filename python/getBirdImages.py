@@ -12,13 +12,10 @@ import urllib.request
 import os
 import datetime
 
-# Will need to go into ...\site-packages\flickrapi\core.py
-# and change line 690 to photoset = list(rsp)[0]
-
 
 
 # open the .txt list of bird species and read them in as a list 
-with open("/home/tom/Projects/Bird Detection/bird_species.txt") as birds_file:
+with open("/home/tom/Projects/Bird Detection/bird_species_small.txt") as birds_file:
     birds = [line.strip() for line in birds_file]
 
 #get an api key and secret from flickr
@@ -48,7 +45,7 @@ for bird in birds:
             if i > 1500:
                 break
             else:
-                TrainDirectory = f'/home/tom/ResearchData/birdberry/BirdSpecies/{bird}'
+                TrainDirectory = f'/home/tom/ResearchData/birdberry/BirdSpeciesSmall/{bird}'
                 #check if directory exists
                 if not os.path.exists(TrainDirectory):
                     os.makedirs(TrainDirectory)

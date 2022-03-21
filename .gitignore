@@ -2,7 +2,9 @@ python/tmp/
 python/__pycache__/
 python/plots/
 python/databaseConnector.py
+python/getBirdImages.py
 
 pi-timolo-master/
 
 other/
+
