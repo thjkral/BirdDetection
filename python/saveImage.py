@@ -16,6 +16,7 @@ import databaseConnector
 
 
 def renameAndMove(filePath):
+    '''Renames the file with with time and day of capture. Also moves the file to a new loction'''
     
     #change the filename to a timestamp
     creationDate = os.path.getmtime(filePath)
@@ -23,10 +24,17 @@ def renameAndMove(filePath):
     
     t_obj = time.strptime(creationTime)
     timeStamp = time.strftime("%d-%m-%Y_%H-%M-%S", t_obj)
-    newPath = os.path.join('/home/tom/Pictures/tmp/', str(timeStamp)) + ".jpg"
+    newPath = os.path.join('/home/tom/Pictures/tmp/bird', str(timeStamp)) + ".jpg"
     
     os.rename(filePath, newPath)
     return newPath
+
+def saveFalsePicture(filePath):
+    '''Saves the pictures of non-birds to a new location'''
+    file_base_name = os.path.basename(filePath)
+    new_path = os.path.join('/home/tom/Pictures/tmp/false', file_base_name)
+    
+    os.rename(filePath, new_path)
 
 
 def write(filePath, accuracy):

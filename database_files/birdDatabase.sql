@@ -29,9 +29,8 @@ CREATE TABLE Visit(
 
 	id INT NOT NULL,
 	species VARCHAR(50),
-	day DATE,
-	arrival TIME,
-	departure TIME,
+	arrival DATETIME,
+	departure DATETIME,
 	visit_len INT,
 	accuracy DECIMAL(5, 2),
 

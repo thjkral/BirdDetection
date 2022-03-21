@@ -22,11 +22,12 @@ def getCurrentId():
     idCursor.execute(idQuery)
     
     highestId = idCursor.fetchone()
-    highestId = int(highestId[0])
+    print(highestId)
     
-    if highestId == None:
+    if highestId[0] == None:
         return 1
     else:
+        highestId = int(highestId[0])
         return highestId + 1
 
 
@@ -38,9 +39,8 @@ def makeVisit(visitList):
     departure = visitList[-1][1]    
     visit_len = (departure - arrival).total_seconds()
     visit_len = int(visit_len)
-    day = arrival.date()
     
-    insertQuery = f"INSERT INTO Visit (id, day, arrival, departure, visit_len) VALUES ('{currentId}','{day}','{arrival.time()}','{departure.time()}','{visit_len}');"
+    insertQuery = f"INSERT INTO Visit (id, arrival, departure, visit_len) VALUES ('{currentId}','{arrival}','{departure}','{visit_len}');"
     insertCursor = db.cursor()
     insertCursor.execute(insertQuery)
     db.commit()
