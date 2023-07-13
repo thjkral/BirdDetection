@@ -1,133 +1,115 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Feb 26 13:23:00 2022
-
-@author: tom
+Creates visits by comparing timestamps of photos.
 """
 
-
-import mysql.connector
-import datetime
-
-import databaseConnector
-
-db = databaseConnector.makeConnection()
-
-def getCurrentId():
-    ''' Gets the next ID from the Visit table '''
-    
-    idQuery = 'SELECT MAX(id) FROM Visit;'
-    idCursor = db.cursor()
-    idCursor.execute(idQuery)
-    
-    highestId = idCursor.fetchone()
-    print(highestId)
-    
-    if highestId[0] == None:
-        return 1
-    else:
-        highestId = int(highestId[0])
-        return highestId + 1
+import hashlib
 
 
-
-def makeVisit(visitList):
-    ''' Makes a new visit and writes it to the database. Should be called before updating the image! '''
+def makeVisit(visitList, database):
+    """ Makes a new visit and writes it to the database. Should be called before updating the image! """
 
     arrival = visitList[0][1]
-    departure = visitList[-1][1]    
-    visit_len = (departure - arrival).total_seconds()
-    visit_len = int(visit_len)
-    
-    insertQuery = f"INSERT INTO Visit (id, arrival, departure, visit_len) VALUES ('{currentId}','{arrival}','{departure}','{visit_len}');"
-    insertCursor = db.cursor()
-    insertCursor.execute(insertQuery)
-    db.commit()
-    insertCursor.close()
-    
+    if arrival == visitList[-1][1]:  # visit is one picture so no time difference
+        visit_len = 1
+        visit_id = computeMD5hash((arrival.strftime("%Y-%m-%d %H:%M:%S")) +
+                                  str(visit_len))
+        insert_query = f"INSERT INTO Visit (visit_id, arrival, visit_len) " \
+                      f"VALUES ('{visit_id}','{arrival}','{visit_len}');"
+    else:
+        departure = visitList[-1][1]
+        visit_len = int((departure - arrival).total_seconds())
+        visit_id = computeMD5hash((arrival.strftime("%Y-%m-%d %H:%M:%S")) +
+                                  str(visit_len))
+        insert_query = f"INSERT INTO Visit (visit_id, arrival, departure, visit_len) " \
+                      f"VALUES ('{visit_id}','{arrival}','{departure}','{visit_len}');"
+
+    insert_cursor = database.cursor()
+    insert_cursor.execute(insert_query)
+    database.commit()
+    insert_cursor.close()
+
+    return visit_id
 
 
-def updateImageInfo(row_id):
-    ''' Assigns a visit ID to the images grouped as a visit. '''
-    
-    print(f"Updating image {row_id[0]} with visit_id {currentId}")
-    
-    updateQuery = f"UPDATE Image SET visit_id='{currentId}' WHERE id='{row_id[0]}'"
-    updateCursor = db.cursor()
+def updateImageInfo(row, visit_id, database):
+    """ Assigns a visit ID to the images grouped as a visit. """
+
+    print(f"Updating image {row[0]} with visit_id {visit_id}")
+
+    updateQuery = f"UPDATE Photo SET visit_id='{visit_id}' WHERE photo_id='{row[0]}'"
+    updateCursor = database.cursor()
     updateCursor.execute(updateQuery)
-    db.commit()
-    
+    database.commit()
+
     updateCursor.close()
 
 
-currentId = getCurrentId() # Get the next ID
+def computeMD5hash(my_string):
+    """ Takes a string and return a hashkey """
+    m = hashlib.md5()
+    m.update(my_string.encode('utf-8'))
+    return m.hexdigest()
 
-# Select all images that are not assigned a visit
-selectQuery = 'SELECT id, capture_day FROM Image WHERE visit_id IS NULL ORDER BY capture_day ASC;'
-selectCursor = db.cursor()
-selectCursor.execute(selectQuery)
-selectResult = selectCursor.fetchall()
 
-# List for visit
-visitList = []
- 
-for i, elem in enumerate(selectResult):
-    
-    
-    if (i < (len(selectResult)-1)):
-        
-        timeOne = selectResult[i][1]
-        timeTwo = selectResult[i+1][1]
-        
-        diff = timeTwo - timeOne
-        diff = diff.total_seconds() # difference between images in seconds
-        
-        if diff <= 20.0: # if there is 20 seconds or less between pictures, it belongs to the same visit.
-            visitList.append(selectResult[i])
-        else: # A new visit occurs with more than 2 seconds betwee pictures. In this case update the database and start a new visit.
-            visitList.append(selectResult[i])
-            
-            makeVisit(visitList) # Adds a new entry to the Visit table.
-            
-            for j in visitList: # Update the Image table for grouped images.
-                updateImageInfo(j)
-            
-            visitList = [] # Reset the grouping
-            currentId += 1 # Advance one ID
-            
-    else:
-        timeOne = selectResult[i][1]
-        timeTwo = selectResult[i-1][1]
-        
-        diff = timeOne - timeTwo
-        diff = diff.total_seconds()
-        
-        if diff <= 20.0:
-            visitList.append(selectResult[i])
-            
-            makeVisit(visitList)
-            
-            for j in visitList:
-                updateImageInfo(j)
+def calculate(database):
+    """
+    Takes unassigned photos and groups them into visits. When photos are made within 20 seconds of each other,
+    this counts as one visit. These are updated with the same visit ID.
+    """
+
+    # Select all images that are not assigned a visit
+    select_query = 'SELECT photo_id, timestamp FROM Photo WHERE visit_id IS NULL ORDER BY timestamp ASC;'
+    select_cursor = database.cursor()
+    select_cursor.execute(select_query)
+    select_result = select_cursor.fetchall()
+
+    # List for visit
+    visit_list = []
+
+    for i, elem in enumerate(select_result):
+
+        if i < (len(select_result) - 1):  # checks if current photo is the last or not
+
+            time_one = select_result[i][1]
+            time_two = select_result[i + 1][1]
+
+            diff = time_two - time_one
+            diff = diff.total_seconds()  # difference between images in seconds
+
+            if diff <= 20.0:  # if there is 20 seconds or less between pictures, it belongs to the same visit.
+                visit_list.append(select_result[i])
+            else:  # A new visit occurs with more than 2 seconds betwee pictures. In this case update the database and start a new visit.
+                visit_list.append(select_result[i])
+
+                created_visit = makeVisit(visit_list, database)  # Adds a new entry to the Visit table.
+
+                for j in visit_list:  # Update the Photo table for grouped images.
+                    updateImageInfo(j, created_visit, database)
+
+                visit_list = []  # Reset the grouping
+
         else:
-            currentId += 1
-            visitList = []
-            visitList.append(selectResult[i])
-            
-            makeVisit(visitList)
-            
-            for j in visitList:
-                updateImageInfo(j)
-        
+            time_one = select_result[i][1]
+            time_two = select_result[i - 1][1]
 
+            diff = time_one - time_two
+            diff = diff.total_seconds()
 
-db.close() # Close the database connection
+            if diff <= 20.0:
+                visit_list.append(select_result[i])
 
+                created_visit = makeVisit(visit_list, database)  # Adds a new entry to the Visit table.
 
+                for j in visit_list:
+                    updateImageInfo(j, created_visit, database)
 
+            else:
+                visit_list = []  # Reset the grouping
+                visit_list.append(select_result[i])
 
+                created_visit = makeVisit(visit_list, database)  # Adds a new entry to the Visit table.
 
-
-
-
+                for j in visit_list:
+                    updateImageInfo(j, created_visit, database)

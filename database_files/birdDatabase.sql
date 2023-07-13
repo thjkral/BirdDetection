@@ -1,17 +1,9 @@
-
-CREATE DATABASE IF NOT EXISTS birdDatabase;
-USE birdDatabase;
-
+DROP TABLE IF EXISTS Photo;
 DROP TABLE IF EXISTS Visit;
-DROP TABLE IF EXISTS Images;
 DROP TABLE IF EXISTS Species;
 
-
-
 CREATE TABLE Species(
-	/*
-	Holds different names of bird species. Can only be used when recognizing species works
-	*/
+-- Holds different names of bird species. Can only be used when recognizing species works
 
 	id VARCHAR(3) NOT NULL UNIQUE,
 	dutchName VARCHAR(50),
@@ -23,38 +15,35 @@ CREATE TABLE Species(
 );
 
 CREATE TABLE Visit(
-	/*
-	Visits by birds during the day. Combines data from different tables
-	*/
+-- Visits by birds during the day. Combines data from different tables
 
-	id INT NOT NULL,
+	visit_id VARCHAR(64),
 	species VARCHAR(50),
-	arrival DATETIME,
-	departure DATETIME,
-	visit_len INT,
+	arrival DATETIME NOT NULL,
+	departure DATETIME DEFAULT NULL,
+	visit_len INT NOT NULL,
 	accuracy DECIMAL(5, 2),
 
-	PRIMARY KEY(id),
+	PRIMARY KEY(visit_id),
 	FOREIGN KEY(species) REFERENCES Species(id)
 );
 
 
-CREATE TABLE Image(
-	/*
-	Holds all pictures of birds
-	*/
+CREATE TABLE Photo(
+-- Holds all pictures of birds
 
-	id INT 	NOT NULL AUTO_INCREMENT,
-	image_name TINYTEXT,
-	capture_day DATETIME,
+	rec_id INT 	NOT NULL AUTO_INCREMENT,
+	photo_id VARCHAR(64) NOT NULL,
+	photo_name TINYTEXT NOT NULL,
+	timestamp DATETIME NOT NULL,
 	accuracy DECIMAL(5, 2),
 	species VARCHAR(50),
-	visit_id INT,
+	visit_id VARCHAR(64),
 
 
-	PRIMARY KEY(id),
+	PRIMARY KEY(rec_id),
 	FOREIGN KEY(species) REFERENCES Species(id),
-	FOREIGN KEY(visit_id) REFERENCES Visit(id)
+	FOREIGN KEY(visit_id) REFERENCES Visit(visit_id)
 );
 
 
