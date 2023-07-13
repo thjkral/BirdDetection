@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Mar  3 16:44:42 2022
-
-@author: tom
+Saves cached photos to a staging area and renames the files in the process.
 """
-
 
 import mysql.connector
 import os
@@ -15,59 +12,48 @@ import time
 import databaseConnector
 
 
-def renameAndMove(filePath):
-    '''Renames the file with with time and day of capture. Also moves the file to a new loction'''
-    
-    #change the filename to a timestamp
-    creationDate = os.path.getmtime(filePath)
-    creationTime = time.ctime(creationDate)
-    
-    t_obj = time.strptime(creationTime)
-    timeStamp = time.strftime("%d-%m-%Y_%H-%M-%S", t_obj)
-    newPath = os.path.join('/home/tom/Pictures/tmp/bird', str(timeStamp)) + ".jpg"
-    
-    os.rename(filePath, newPath)
-    return newPath
+def rename_move(file, path, output_folder):
+    """Rename the cached files to their time stamp
+        file: name of the file that needs to be moved and renamed
+        path: the filepath leading to the file
+        output_folder: the location where the file needs to be moved to
+    """
+    full_path = os.path.join(path, file)
 
-def saveFalsePicture(filePath):
-    '''Saves the pictures of non-birds to a new location'''
-    file_base_name = os.path.basename(filePath)
-    new_path = os.path.join('/home/tom/Pictures/tmp/false', file_base_name)
-    
-    os.rename(filePath, new_path)
+    # change the filename to a timestamp
+    creation_date = os.path.getmtime(full_path)
+    creation_time = time.ctime(creation_date)
+
+    t_obj = time.strptime(creation_time)
+    time_stamp = time.strftime("%d-%m-%Y_%H-%M-%S", t_obj)
+    new_path = os.path.join(output_folder, str(time_stamp)) + ".jpg"
+
+    os.rename(full_path, new_path)
+    return new_path
 
 
-def write(filePath, accuracy):
-    '''Writes a file to the database'''
-    
-    # Start database connection
-    db = databaseConnector.makeConnection()
-    
+def write(file, database):
+    """Writes a file to the database"""
+
     # Get the filename
-    fileName = os.path.basename(filePath)
-    
+    fileName = os.path.basename(file)
+
     # Get the creation date and convert to datetime
-    path = os.path.join(filePath, filePath)
+    path = os.path.join(file, file)
     c_time = os.path.getmtime(path)
     dt_c = datetime.datetime.fromtimestamp(c_time)
-    
-    # Round the accuracy
-    round(accuracy, 2)
-    
-    query = f"INSERT INTO Image (image_name, capture_day, accuracy) VALUES ('{fileName}', '{dt_c}', {accuracy});"
-    
-    cursor = db.cursor()
+
+    query = f"INSERT INTO Photo (photo_name, timestamp, photo_id) " \
+            f"VALUES ('{fileName}', '{dt_c}', MD5(CONCAT(photo_name,timestamp)));"
+
+    cursor = database.cursor()
     cursor.execute(query)
-    db.commit()
-    
+    database.commit()
+
     cursor.close()
-    db.close()
-
-def save(filePath, accuracy):
-    '''Performs all save operations'''
-    newPath = renameAndMove(filePath)
-    write(newPath, accuracy)
 
 
-    
-
+def save(image_name, image_path, staging_location, database_connector):
+    """Performs all save operations"""
+    renamed_moved_image = rename_move(image_name, image_path, staging_location)
+    write(renamed_moved_image, database_connector)
