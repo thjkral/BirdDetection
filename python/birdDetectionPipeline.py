@@ -12,10 +12,26 @@ import os
 import json
 import argparse
 import sys
+import logging
+from datetime import datetime
 
 # Import Python scripts
 import saveImage
 import createVisits
+
+
+def read_config():  # Load config
+    """Open and load the config"""
+    try:
+        with open('/etc/birdconfig/birdconfig.json', 'r') as f:
+            print('Config file loaded')
+            return json.load(f)
+    except Error as e:
+        print(e)
+
+
+pipeline_config = read_config()
+
 
 # Parse commandline options
 parser = argparse.ArgumentParser(
@@ -27,25 +43,26 @@ parser.add_argument('-i', '--identify', action='store_true', help='Identify new 
 parser.add_argument('-v', '--visits', action='store_true', help='Subdivide new images in visits')
 parser.add_argument('-r', '--recap', action='store_true', help='Send daily summaries of the process')
 parser.add_argument('-a', '--all', action='store_true', help='Run the entire pipeline')
+parser.add_argument('-l', '--log', action='store_true', help='Create log file')
 
 args = parser.parse_args()
+
 
 if len(sys.argv) == 1:  # quit if no arguments are provided
     parser.print_help()
     sys.exit()
 else:  # execute program if arguments are passed
-    def read_config():  # Load config
-        """Open and load the config"""
-        try:
-            with open('/etc/birdconfig/birdconfig.json', 'r') as f:
-                print('Config file loaded')
-                return json.load(f)
-        except Error as e:
-            print(e)
 
+    # Set up logging
+    if args.log:
+        logging.basicConfig(filename=pipeline_config['application']['logfile_location']
+                            + str(datetime.now().strftime("%d-%m-%Y_%H:%M:%S"))
+                            + '.log'
+                            , level=logging.INFO
+                            , format='%(asctime)s:%(msecs)03d | %(message)s'
+                            , datefmt='%H:%M:%S')
 
-    pipeline_config = read_config()
-
+        logging.info('START RUN - Arguments: %s', args)
 
     def connect_to_database():  # Open database connection
         """Open the connection to the database"""
@@ -55,10 +72,12 @@ else:  # execute program if arguments are passed
                                  user=pipeline_config['database']['user'],
                                  password=pipeline_config['database']['password'])
             print('Database connection made')
+            if args.log: logging.info('Database connection made')
             return connection
 
         except Error as e:
             print(e)
+            if args.log: logging.ERROR(e)
 
 
     db = connect_to_database()
