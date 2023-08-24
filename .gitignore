@@ -4,6 +4,8 @@ python/plots/
 python/databaseConnector.py
 python/getBirdImages.py
 
+logs/
+
 pi-timolo-master/
 
 other/
