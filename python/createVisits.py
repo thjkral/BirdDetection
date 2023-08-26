@@ -5,6 +5,8 @@ Creates visits by comparing timestamps of photos.
 """
 
 import hashlib
+import logging
+from mysql.connector import connect, Error
 
 
 def makeVisit(visitList, database):
@@ -26,9 +28,14 @@ def makeVisit(visitList, database):
                       f"VALUES ('{visit_id}','{arrival}','{departure}','{visit_len}');"
 
     insert_cursor = database.cursor()
-    insert_cursor.execute(insert_query)
-    database.commit()
-    insert_cursor.close()
+
+    try:
+        insert_cursor.execute(insert_query)
+        database.commit()
+    except Error as e:
+        logging.error('Error in making visits. Stacktrace:\n %s', e)
+    finally:
+        insert_cursor.close()
 
     return visit_id
 
@@ -39,11 +46,15 @@ def updateImageInfo(row, visit_id, database):
     print(f"Updating image {row[0]} with visit_id {visit_id}")
 
     updateQuery = f"UPDATE Photo SET visit_id='{visit_id}' WHERE photo_id='{row[0]}'"
-    updateCursor = database.cursor()
-    updateCursor.execute(updateQuery)
-    database.commit()
 
-    updateCursor.close()
+    try:
+        updateCursor = database.cursor()
+        updateCursor.execute(updateQuery)
+        database.commit()
+    except Error as e:
+        logging.error(e)
+    finally:
+        updateCursor.close()
 
 
 def computeMD5hash(my_string):
@@ -80,7 +91,7 @@ def calculate(database):
 
             if diff <= 20.0:  # if there is 20 seconds or less between pictures, it belongs to the same visit.
                 visit_list.append(select_result[i])
-            else:  # A new visit occurs with more than 2 seconds betwee pictures. In this case update the database and start a new visit.
+            else:  # A new visit occurs with more than 2 seconds between pictures. In this case update the database and start a new visit.
                 visit_list.append(select_result[i])
 
                 created_visit = makeVisit(visit_list, database)  # Adds a new entry to the Visit table.
