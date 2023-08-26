@@ -4,10 +4,7 @@ Module for sending messages to a device.
 """
 
 import json
-import network
-import urequests
-import statistics
-import time
+import telepot
 
 
 def read_config():  # Load config
@@ -16,23 +13,12 @@ def read_config():  # Load config
         return json.load(f)
 
 
+# Create a Telegram bot
 secrets = read_config()
-
-# Set up WLAN connection
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect(secrets.SSID, secrets.PASSWORD)
-time.sleep(5)
-print(wlan.isconnected())
+bot = telepot.Bot(secrets['API'])
 
 def send_single_message(message):
-    urequests.get(
-        "https://api.telegram.org/bot"
-        + secrets['API']
-        + "/sendMessage?text="
-        + message
-        + "&chat_id="
-        + secrets['USER_ID'])
+    bot.sendMessage(secrets['USER_ID'], message)
 
 
 def send_summary():
@@ -41,4 +27,4 @@ def send_summary():
 
 if __name__ == '__main__':
     print('sending a test message')
-    send_single_message('Testing 123')
+    #send_single_message('Testing 123')
