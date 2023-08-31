@@ -26,12 +26,11 @@ def read_config():  # Load config
     try:
         with open('/etc/birdconfig/birdconfig.json', 'r') as f:
             return json.load(f)
-    except Error as e:
-        print(e)
+    except FileNotFoundError:
+        logging.error("Can't find config file at main pipeline level")
 
 
 pipeline_config = read_config()
-
 
 # Parse commandline options
 parser = argparse.ArgumentParser(
@@ -39,13 +38,11 @@ parser = argparse.ArgumentParser(
     description='Save and identify images from my birdfeeder')
 
 parser.add_argument('-s', '--save', action='store_true', help='Save cached images in cache to the database')
-parser.add_argument('-i', '--identify', action='store_true', help='Identify new images with NN model')
 parser.add_argument('-v', '--visits', action='store_true', help='Subdivide new images in visits')
 parser.add_argument('-r', '--recap', action='store_true', help='Send daily summaries of the process')
 parser.add_argument('-a', '--all', action='store_true', help='Run the entire pipeline')
 
 args = parser.parse_args()
-
 
 if len(sys.argv) == 1:  # quit if no arguments are provided
     parser.print_help()
@@ -53,16 +50,17 @@ if len(sys.argv) == 1:  # quit if no arguments are provided
 else:  # execute program if arguments are passed
 
     # Set up logging
-    logfile = pipeline_config['application']['logfile_location'] + str(datetime.now().strftime("%d-%m-%Y_%H:%M:%S")) + '.log'
+    logfile = pipeline_config['application']['logfile_location'] + str(datetime.now().strftime("%d-%m-%Y")) + '.log'
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s:%(msecs)03d | %(message)s',
                         datefmt='%H:%M:%S',
                         handlers=[
-                               logging.FileHandler(logfile),
-                               logging.StreamHandler(sys.stdout)
-                           ])
+                            logging.FileHandler(logfile),
+                            logging.StreamHandler(sys.stdout)
+                        ])
 
     logging.info('START RUN - Arguments: %s', args)
+
 
     def connect_to_database():  # Open database connection
         """Open the connection to the database"""
@@ -75,8 +73,7 @@ else:  # execute program if arguments are passed
             return connection
 
         except Error as e:
-            print(e)
-            logging.ERROR(e)
+            logging.error('Database connection could not be made', e)
 
 
     db = connect_to_database()
@@ -85,16 +82,12 @@ else:  # execute program if arguments are passed
         logging.info('Moving images from cache to staging')
 
         photo_cache = os.listdir(pipeline_config['application']['cache_folder'])
-        logging.info(f'\tStaging {len(photo_cache)} images')
-        for picture in photo_cache:
-            saveImage.save(picture,
-                           pipeline_config['application']['cache_folder'],
-                           pipeline_config['application']['staging_folder'],
-                           db)
+        logging.info(f'\t\tStaging {len(photo_cache)} images')
 
-    if args.identify or args.all:
-        logging.info('Identifying images is not yet implemented')
-        # TODO: calculate predictions
+        saveImage.save(pipeline_config['application']['cache_folder'],
+                       pipeline_config['application']['staging_folder'],
+                       pipeline_config['application']['rejects_folder'],
+                       db)
 
     if args.visits or args.all:  # Calculate visits
         logging.info('Calculating and assigning visits.')
