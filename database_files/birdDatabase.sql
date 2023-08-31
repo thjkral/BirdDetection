@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS Photo;
+DROP TABLE IF EXISTS Image;
 DROP TABLE IF EXISTS Visit;
 DROP TABLE IF EXISTS Species;
 
@@ -29,14 +29,14 @@ CREATE TABLE Visit(
 );
 
 
-CREATE TABLE Photo(
--- Holds all pictures of birds
+CREATE TABLE Image(
+-- Holds all images of birds
 
 	rec_id INT 	NOT NULL AUTO_INCREMENT,
-	photo_id VARCHAR(64) NOT NULL,
-	photo_name TINYTEXT NOT NULL,
+	image_id VARCHAR(64) NOT NULL,
+	image_name TINYTEXT NOT NULL,
 	timestamp DATETIME NOT NULL,
-	accuracy DECIMAL(5, 2),
+	accuracy DECIMAL(5, 2) NOT NULL,
 	species VARCHAR(50),
 	visit_id VARCHAR(64),
 
