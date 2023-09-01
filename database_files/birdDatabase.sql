@@ -35,10 +35,14 @@ CREATE TABLE Image(
 	rec_id INT 	NOT NULL AUTO_INCREMENT,
 	image_id VARCHAR(64) NOT NULL,
 	image_name TINYTEXT NOT NULL,
-	timestamp DATETIME NOT NULL,
-	accuracy DECIMAL(5, 2) NOT NULL,
-	species VARCHAR(50),
+	classification ENUM('Bird', 'False') NOT NULL,
+	accuracy_class DECIMAL(5, 2) NOT NULL,
 	visit_id VARCHAR(64),
+	species VARCHAR(50),
+	accuracy_species DECIMAL(5, 2),
+	timestamp DATETIME NOT NULL,
+	date DATE NOT NULL,
+	time TIME NOT NULL,
 
 
 	PRIMARY KEY(rec_id),
