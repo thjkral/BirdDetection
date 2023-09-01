@@ -19,6 +19,7 @@ from datetime import datetime
 # Import Python scripts
 import saveImage
 import createVisits
+import message_sender
 
 
 def read_config():  # Load config
@@ -82,17 +83,24 @@ else:  # execute program if arguments are passed
         logging.info('Moving images from cache to staging')
 
         photo_cache = os.listdir(pipeline_config['application']['cache_folder'])
-        logging.info(f'\t\tStaging {len(photo_cache)} images')
 
-        saveImage.save(pipeline_config['application']['cache_folder'],
-                       pipeline_config['application']['staging_folder'],
-                       pipeline_config['application']['rejects_folder'],
-                       db)
+        if len(photo_cache) > 0:
+            logging.info(f'\t\tStaging {len(photo_cache)} images')
+
+            saveImage.save(pipeline_config['application']['cache_folder'],
+                           pipeline_config['application']['staging_folder'],
+                           pipeline_config['application']['rejects_folder'],
+                           db)
+        else:
+            logging.info(f'\t\tNo images to stage')
 
     if args.visits or args.all:  # Calculate visits
         logging.info('Calculating and assigning visits.')
         createVisits.calculate(db)
 
     if args.recap or args.all:  # Send summarizing recap messages
-        logging.info('Sending a summary is not yet implemented')
+        logging.info('Sending a summary to Telegram')
+        message_sender.send_summary(pipeline_config['application']['logfile_location'],
+                                    pipeline_config['application']['staging_folder'],
+                                    db)
         # TODO: sending of a recap to a device
