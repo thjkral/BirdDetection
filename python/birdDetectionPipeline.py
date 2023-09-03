@@ -3,7 +3,7 @@
 Starting point for the pipeline that runs every night. It has four main functions:
 1) Add cached photos to the database
 2) Identify birds on pictures
-3) Calculate and group photos into visits
+3) Calculate and group photos into visits - NEEDS ADJUSTMENT
 4) Send a daily summary
 """
 
@@ -22,16 +22,24 @@ import createVisits
 import message_sender
 
 
-def read_config():  # Load config
-    """Open and load the config"""
-    try:
-        with open('/etc/birdconfig/birdconfig.json', 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        logging.error("Can't find config file at main pipeline level")
+
+# Open and load the config
+try:
+    with open('/etc/birdconfig/birdconfig.json', 'r') as f:
+        pipeline_config = json.load(f)
+except FileNotFoundError:
+    logging.error("ERROR: Can't find config file at main pipeline level")
+    sys.exit(0)
 
 
-pipeline_config = read_config()
+# Check if necessary staging folders are present
+staging_dirs = ['Bird', 'False', 'undef']
+for d in staging_dirs:
+    if not os.path.isdir(os.path.join(pipeline_config['application']['staging_folder'], d)):
+        os.makedirs(os.path.join(pipeline_config['application']['staging_folder'], d))
+
+
+
 
 # Parse commandline options
 parser = argparse.ArgumentParser(
@@ -74,7 +82,7 @@ else:  # execute program if arguments are passed
             return connection
 
         except Error as e:
-            logging.error('Database connection could not be made', e)
+            logging.error('ERROR: Database connection could not be made', e)
 
 
     db = connect_to_database()
@@ -89,18 +97,16 @@ else:  # execute program if arguments are passed
 
             saveImage.save(pipeline_config['application']['cache_folder'],
                            pipeline_config['application']['staging_folder'],
-                           pipeline_config['application']['rejects_folder'],
                            db)
         else:
             logging.info(f'\t\tNo images to stage')
 
     if args.visits or args.all:  # Calculate visits
-        logging.info('Calculating and assigning visits.')
-        createVisits.calculate(db)
+        logging.info('Calculating and assigning visits not available yet.')
+        # createVisits.calculate(db)
 
     if args.recap or args.all:  # Send summarizing recap messages
         logging.info('Sending a summary to Telegram')
         message_sender.send_summary(pipeline_config['application']['logfile_location'],
                                     pipeline_config['application']['staging_folder'],
                                     db)
-        # TODO: sending of a recap to a device

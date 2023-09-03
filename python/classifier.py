@@ -16,17 +16,21 @@ try:
 except FileNotFoundError:
     logging.error("Can't find config file at classifier.py module")
 
-cnn_model = ImageModel.load(config['prediction_model']['path'])
+classif_model = ImageModel.load(config['prediction_model']['classification'])
+classif_min_acc = config['prediction_model']['classif_cap']
 
 
 def classify_image(file_path):
-    result = cnn_model.predict_from_file(file_path)
+    result = classif_model.predict_from_file(file_path)
 
     # Return top prediction
     prediction = result.labels[0][0]
     accuracy = round((result.labels[0][1] * 100), 2)
 
-    return prediction, accuracy
+    if accuracy <= classif_min_acc:  # Prediction must exceed predefined certainty
+        return 'undef', accuracy
+    else:
+        return prediction, accuracy
 
 
 def classify_directory(dir_path, model):

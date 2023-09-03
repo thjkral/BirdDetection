@@ -13,7 +13,7 @@ from pathlib import Path
 import classifier
 
 
-def rename_move(file, path, output_folder):
+def rename_move(file, path, img_type, output_folder):
     """
     Rename the cached files to their time stamp
         file: name of the file that needs to be moved and renamed
@@ -28,13 +28,13 @@ def rename_move(file, path, output_folder):
 
     t_obj = time.strptime(creation_time)
     time_stamp = time.strftime("%d-%m-%Y_%H-%M-%S", t_obj)
-    new_path = os.path.join(output_folder, str(time_stamp)) + '_' + Path(file).stem + "_bird.jpg"
+    new_path = os.path.join(output_folder, img_type, str(time_stamp)) + '_' + Path(file).stem + "_" + img_type + "_.jpg"
 
     os.rename(full_path, new_path)
     return new_path
 
 
-def write(file, accuracy, type, database):
+def write(file, accuracy, img_type, database):
     """Writes a file to the database"""
 
     # Get the filename
@@ -48,7 +48,7 @@ def write(file, accuracy, type, database):
     time = dt_c.time()
 
     query = f"INSERT INTO Image (image_name, image_id, classification, accuracy_class, timestamp, date, time) " \
-            f"VALUES ('{fileName}', MD5(CONCAT(image_name,timestamp)), '{type}', {accuracy}, '{dt_c}', '{date}', '{time}');"
+            f"VALUES ('{fileName}', MD5(CONCAT(image_name,timestamp)), '{img_type}', {accuracy}, '{dt_c}', '{date}', '{time}');"
 
     cursor = database.cursor()
     cursor.execute(query)
@@ -57,20 +57,12 @@ def write(file, accuracy, type, database):
     cursor.close()
 
 
-def reject_image(file, path, output_location):
-    """ Put non-bird pictures in a seperate folder """
-
-    old_path = os.path.join(path, file)
-    new_path = os.path.join(output_location, file)
-    os.rename(old_path, new_path)
-    return new_path
-
-
-def save(cache_location, staging_location, rejects_location, database_connector):
+def save(cache_location, staging_location, database_connector):
     """ Classify and save cached images """
 
     # Define some values for statistics
     no_of_birds = 0
+    no_of_undef = 0
     no_of_rejects = 0
     acc_bird = []
     acc_rejects = []
@@ -79,21 +71,26 @@ def save(cache_location, staging_location, rejects_location, database_connector)
 
     cache = os.listdir(cache_location)
     for image in cache:
-
+        # Classify the image
         classify_results = classifier.classify_image(os.path.join(cache_location, image))
         img_type = classify_results[0]
         accuracy = classify_results[1]
 
-        if classify_results[0] == 'Bird':  # Only save if the image is of a bird
-            renamed_moved_image = rename_move(image, cache_location, staging_location)
-            write(renamed_moved_image, accuracy, img_type, database_connector)
+        # Save the image to staging and database
+        renamed_moved_image = rename_move(image, cache_location, img_type, staging_location)
+        write(renamed_moved_image, accuracy, img_type, database_connector)
+
+        # Add to statistics
+        if img_type == 'Bird':
             no_of_birds += 1
             acc_bird.append(accuracy)
-        else:  # Non-bird pictures are saved elsewhere
-            renamed_moved_image = reject_image(image, cache_location, rejects_location)
-            write(renamed_moved_image, accuracy, img_type, database_connector)
+        elif img_type == 'False':
             no_of_rejects += 1
             acc_rejects.append(accuracy)
+        elif img_type == 'undef':
+            no_of_undef += 1
+        else:
+            logging.warning('The model returned an unknown category!')
 
     if no_of_birds >= 1:
         avg_accuracy_bird = round((sum(acc_bird)/len(acc_bird)), 2)
@@ -101,6 +98,8 @@ def save(cache_location, staging_location, rejects_location, database_connector)
         avg_accuracy_rejects = round((sum(acc_rejects)/len(acc_rejects)), 2)
 
     logging.info(f'\t\tIdentified {no_of_birds} birds and rejected {no_of_rejects} images')
+    logging.info(f'\t\tCould not correctly identify {no_of_undef} images.')
     logging.info(f'\t\tAverage accuracy for birds= {avg_accuracy_bird}')
     logging.info(f'\t\tAverage accuracy for rejects= {avg_accuracy_rejects}')
+
 

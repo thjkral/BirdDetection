@@ -35,7 +35,7 @@ CREATE TABLE Image(
 	rec_id INT 	NOT NULL AUTO_INCREMENT,
 	image_id VARCHAR(64) NOT NULL,
 	image_name TINYTEXT NOT NULL,
-	classification ENUM('Bird', 'False') NOT NULL,
+	classification ENUM('Bird', 'False', 'undef') NOT NULL,
 	accuracy_class DECIMAL(5, 2) NOT NULL,
 	visit_id VARCHAR(64),
 	species VARCHAR(50),
