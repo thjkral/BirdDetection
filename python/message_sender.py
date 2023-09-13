@@ -36,41 +36,41 @@ def send_motion_capture(image):
                   caption=f'Movement spotted at the birdfeeder at: {datetime.now().strftime("%d-%m-%Y %H:%M:%S.%f")}')
 
 
-def send_summary(log_location, staging_location, database):
+def send_summary(staging_location, database):
     """ Send a daily summary with statistics and the most accurate image of a bird """
-
-    log_date = datetime.now().strftime("%d-%m-%Y")
-    logfile = os.path.join(log_location, (log_date + '.log'))
     target_date = (datetime.now() - timedelta(days=1)).strftime("%d-%m-%Y")
 
     try:
-        with open(logfile, 'r') as infile:
-            log_content = infile.read()
-            pictures_amount = re.search(r"Staging (\d+) images", log_content)
-            birds_amount = re.search(r"Identified (\d+) birds", log_content)
-            avg = re.search(r"Average accuracy for birds= (\d{1,3}.\d+)", log_content)
+        db_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        daily_count_query = f"""SELECT bird_amount, false_amount, undef_amount 
+                                FROM Image_statistics WHERE date_day = '{db_date}';"""
+        count_cursor = database.cursor()
+        count_cursor.execute(daily_count_query)
+        count_result = count_cursor.fetchone()
 
-            header = f'Report {target_date}\n'
-            image_stat = f'Images taken: {pictures_amount.group(1)}\nBirds: {birds_amount.group(1)}\nAverage accuracy: {avg.group(1)}%'
-            bot.sendMessage(secrets['USER_ID'], header + image_stat)
-            logging.info('\t\tSummary sent')
+        (bird_count, false_count, undef_count) = count_result
 
-            if int(birds_amount.group(1)) >= 1:
-                try:
-                    db_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-                    best_img_query = f"SELECT image_name FROM Image WHERE classification LIKE 'Bird' AND date = '{db_date}' ORDER BY accuracy_class DESC LIMIT 1;"
-                    select_cursor = database.cursor()
-                    select_cursor.execute(best_img_query)
-                    select_result = select_cursor.fetchone()
+        header = f'Report {target_date}\n'
+        image_stat = f"Images taken: {sum(count_result)}\nBirds: {bird_count}\nFalse positives: {false_count}\nUndefined: {undef_count}"
+        bot.sendMessage(secrets['USER_ID'], header + image_stat)
 
-                    staging_location = staging_location + '/Bird'
-                    file = open(os.path.join(staging_location, select_result[0]), 'rb')
-                    bot.sendPhoto(secrets['USER_ID'], file, caption=f'Most accurate image taken on {log_date}')
-                    logging.info('\t\tImage with highest accuracy sent as part of the summary')
-                except FileNotFoundError:
-                    logging.error('ERROR: Cannot fetch image from disk for daily summary')
-                except TypeError:
-                    logging.error('ERROR: Cannot fetch image from database for daily summary')
+        logging.info('\t\tSummary sent')
+
+        if int(bird_count) >= 1:
+            try:
+                best_img_query = f"SELECT image_name FROM Image WHERE classification LIKE 'Bird' AND date = '{db_date}' ORDER BY accuracy_class DESC LIMIT 1;"
+                select_cursor = database.cursor()
+                select_cursor.execute(best_img_query)
+                select_result = select_cursor.fetchone()
+
+                staging_location = staging_location + '/Bird'
+                file = open(os.path.join(staging_location, select_result[0]), 'rb')
+                bot.sendPhoto(secrets['USER_ID'], file, caption=f'Most accurate image taken on {target_date}')
+                logging.info('\t\tImage with highest accuracy sent as part of the summary')
+            except FileNotFoundError:
+                logging.error('ERROR: Cannot fetch image from disk for daily summary')
+            except TypeError:
+                logging.error('ERROR: Cannot fetch image from database for daily summary')
 
     except FileNotFoundError:
         logging.error('ERROR: Cannot find log file of the day to make summary')

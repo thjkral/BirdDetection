@@ -14,14 +14,12 @@ import json
 import argparse
 import sys
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Import Python scripts
 import saveImage
 import createVisits
 import message_sender
-
-
 
 # Open and load the config
 try:
@@ -31,15 +29,11 @@ except FileNotFoundError:
     logging.error("ERROR: Can't find config file at main pipeline level")
     sys.exit(0)
 
-
 # Check if necessary staging folders are present
 staging_dirs = ['Bird', 'False', 'undef']
 for d in staging_dirs:
     if not os.path.isdir(os.path.join(pipeline_config['application']['staging_folder'], d)):
         os.makedirs(os.path.join(pipeline_config['application']['staging_folder'], d))
-
-
-
 
 # Parse commandline options
 parser = argparse.ArgumentParser(
@@ -106,7 +100,40 @@ else:  # execute program if arguments are passed
         # createVisits.calculate(db)
 
     if args.recap or args.all:  # Send summarizing recap messages
-        logging.info('Sending a summary to Telegram')
-        message_sender.send_summary(pipeline_config['application']['logfile_location'],
-                                    pipeline_config['application']['staging_folder'],
+        logging.info('Preparing to send a summary to Telegram')
+
+        db_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        logging.info(f'\t\tcalculating number of images taken on {db_date}')
+
+        try:
+            daily_count_query = f"""INSERT INTO Image_statistics(date_day, bird_amount, false_amount, undef_amount)    
+                                    SELECT i.date, 
+                                        SUM(CASE WHEN i.classification = 'Bird' THEN 1 ELSE 0 END) AS bird_count,
+                                        SUM(CASE WHEN i.classification = 'False' THEN 1 ELSE 0 END) AS false_count, 
+                                        SUM(CASE WHEN i.classification = 'undef' THEN 1 ELSE 0 END) AS undef_count 
+                                        FROM birdDatabase.Image AS i WHERE date = '{db_date}';"""
+            cursor = db.cursor()
+            cursor.execute(daily_count_query)
+            db.commit()
+        except Error as e:
+            logging.error(f'ERROR when calculating images taken: {e}')
+        finally:
+            cursor.close()
+
+        logging.info(f'\t\tcalculating average accuracies')
+        try:
+            for i in ['Bird', 'False', 'undef']:
+                average_query = f"""UPDATE Image_statistics SET {i}_average_accuracy = (
+	                            SELECT IF(AVG(accuracy_class) IS NULL, 0, AVG(accuracy_class)) 
+	                            FROM Image WHERE classification = '{i}' AND date = '{db_date}'
+                                ) WHERE date_day = '{db_date}';"""
+                cursor = db.cursor()
+                cursor.execute(average_query)
+                db.commit()
+        except Error as e:
+            logging.error(f'ERROR while calculating average accuracies for summary')
+        finally:
+            cursor.close()
+
+        message_sender.send_summary(pipeline_config['application']['staging_folder'],
                                     db)

@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS Image;
 DROP TABLE IF EXISTS Visit;
+DROP TABLE IF EXISTS Image_statistics;
 DROP TABLE IF EXISTS Species;
 
 CREATE TABLE Species(
@@ -50,5 +51,17 @@ CREATE TABLE Image(
 	FOREIGN KEY(visit_id) REFERENCES Visit(visit_id)
 );
 
+CREATE TABLE Image_statistics(
+    rec_id INT NOT NULL AUTO_INCREMENT,
+    day DATE NOT NULL,
+    bird_amount INT NOT NULL DEFAULT 0,
+    bird_average_accuracy DECIMAL(5,2) DEFAULT 00.00,
+    false_amount INT NOT NULL DEFAULT 0,
+    false_average_accuracy DECIMAL(5,2) DEFAULT 00.00,
+    undef_amount INT NOT NULL DEFAULT 0,
+    undef_average_accuracy DECIMAL(5,2) DEFAULT 00.00,
 
+    UNIQUE(day),
+    PRIMARY KEY(rec_id)
+);
 
