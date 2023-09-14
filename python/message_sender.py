@@ -72,8 +72,9 @@ def send_summary(staging_location, database):
             except TypeError:
                 logging.error('ERROR: Cannot fetch image from database for daily summary')
 
-    except FileNotFoundError:
-        logging.error('ERROR: Cannot find log file of the day to make summary')
+    except:
+        logging.error(f'ERROR: Cannot generate report')
+        send_single_message(f"Problem sending daily report of {target_date}. Check logs or run pipeline with '-r' argument")
 
 
 if __name__ == '__main__':
