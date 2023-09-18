@@ -81,6 +81,10 @@ else:  # execute program if arguments are passed
 
     db = connect_to_database()
 
+    ########################################
+    # IDENTIFY AND SAVE IMAGES TO DATABASE #
+    ########################################
+
     if args.save or args.all:  # Start saving photos to the database
         logging.info('Moving images from cache to staging')
 
@@ -95,9 +99,17 @@ else:  # execute program if arguments are passed
         else:
             logging.info(f'\t\tNo images to stage')
 
+    ####################
+    # CALCULATE VISITS #
+    ####################
+
     if args.visits or args.all:  # Calculate visits
-        logging.info('Calculating and assigning visits not available yet.')
-        # createVisits.calculate(db)
+        logging.info('Calculating and assigning visits.')
+        createVisits.calculate(db)
+
+    #########################################
+    # CREATE A SUMMARY AND SEND TO TELEGRAM #
+    #########################################
 
     if args.recap or args.all:  # Send summarizing recap messages
         logging.info('Preparing to send a summary to Telegram')
@@ -105,7 +117,7 @@ else:  # execute program if arguments are passed
         db_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
         logging.info(f'\t\tcalculating number of images taken on {db_date}')
 
-        try:
+        try:  # Calculate the amount of pictures taken per category
             daily_count_query = f"""INSERT INTO Image_statistics(date_day, bird_amount, false_amount, undef_amount)    
                                     SELECT i.date, 
                                         SUM(CASE WHEN i.classification = 'Bird' THEN 1 ELSE 0 END) AS bird_count,
@@ -121,7 +133,7 @@ else:  # execute program if arguments are passed
             cursor.close()
 
         logging.info(f'\t\tcalculating average accuracies')
-        try:
+        try:  # Calculate the average accuracy per category
             for i in ['Bird', 'False', 'undef']:
                 average_query = f"""UPDATE Image_statistics SET {i}_average_accuracy = (
 	                            SELECT IF(AVG(accuracy_class) IS NULL, 0, AVG(accuracy_class)) 
@@ -135,5 +147,22 @@ else:  # execute program if arguments are passed
         finally:
             cursor.close()
 
+        logging.info('\t\tCalculating the number of visits')
+        try:  # Add the total amount of visits to the database
+            daily_visits_query = f"""UPDATE birdDatabase.Image_statistics AS is1 
+                                    SET is1.visit_amount=(SELECT COUNT(DISTINCT visit_id) AS counter 
+                                    FROM Visit WHERE DATE(arrival) = '{db_date}')
+                                    WHERE is1.date_day = '{db_date}';"""
+            cursor = db.cursor()
+            cursor.execute(daily_visits_query)
+            db.commit()
+        except Error as e:
+            logging.error(f'ERROR while calculating sum of visits')
+        finally:
+            cursor.close()
+
         message_sender.send_summary(pipeline_config['application']['staging_folder'],
                                     db)
+
+
+logging.info('Ending run. Goodbye!')

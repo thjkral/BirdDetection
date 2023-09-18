@@ -33,7 +33,7 @@ def makeVisit(visitList, database):
         insert_cursor.execute(insert_query)
         database.commit()
     except Error as e:
-        logging.error('Error in making visits. Stacktrace:\n %s', e)
+        logging.error(f'ERROR: Adding visit to database failed. Arrival at: {arrival}\n{e}')
     finally:
         insert_cursor.close()
 
@@ -45,14 +45,14 @@ def updateImageInfo(row, visit_id, database):
 
     print(f"Updating image {row[0]} with visit_id {visit_id}")
 
-    updateQuery = f"UPDATE Photo SET visit_id='{visit_id}' WHERE photo_id='{row[0]}'"
+    updateQuery = f"UPDATE Image SET visit_id='{visit_id}' WHERE image_id='{row[0]}'"
 
     try:
         updateCursor = database.cursor()
         updateCursor.execute(updateQuery)
         database.commit()
     except Error as e:
-        logging.error(e)
+        logging.error(f'ERROR: updating image failed. Image ID = {row[0]}')
     finally:
         updateCursor.close()
 
@@ -71,7 +71,9 @@ def calculate(database):
     """
 
     # Select all images that are not assigned a visit
-    select_query = 'SELECT photo_id, timestamp FROM Photo WHERE visit_id IS NULL ORDER BY timestamp ASC;'
+    select_query = """SELECT image_id, timestamp FROM Image 
+                      WHERE visit_id IS NULL AND classification = 'Bird' 
+                      ORDER BY timestamp ASC;"""
     select_cursor = database.cursor()
     select_cursor.execute(select_query)
     select_result = select_cursor.fetchall()
@@ -91,7 +93,7 @@ def calculate(database):
 
             if diff <= 20.0:  # if there is 20 seconds or less between pictures, it belongs to the same visit.
                 visit_list.append(select_result[i])
-            else:  # A new visit occurs with more than 2 seconds between pictures. In this case update the database and start a new visit.
+            else:  # A new visit occurs with more than 20 seconds between pictures. In this case update the database and start a new visit.
                 visit_list.append(select_result[i])
 
                 created_visit = makeVisit(visit_list, database)  # Adds a new entry to the Visit table.
