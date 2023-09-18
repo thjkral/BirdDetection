@@ -53,15 +53,16 @@ CREATE TABLE Image(
 
 CREATE TABLE Image_statistics(
     rec_id INT NOT NULL AUTO_INCREMENT,
-    day DATE NOT NULL,
+    date_day DATE NOT NULL,
     bird_amount INT NOT NULL DEFAULT 0,
     bird_average_accuracy DECIMAL(5,2) DEFAULT 00.00,
     false_amount INT NOT NULL DEFAULT 0,
     false_average_accuracy DECIMAL(5,2) DEFAULT 00.00,
     undef_amount INT NOT NULL DEFAULT 0,
     undef_average_accuracy DECIMAL(5,2) DEFAULT 00.00,
+    visit_amount INT DEFAULT 0,
 
-    UNIQUE(day),
+    UNIQUE(date_day),
     PRIMARY KEY(rec_id)
 );
 

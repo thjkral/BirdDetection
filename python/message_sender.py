@@ -42,17 +42,18 @@ def send_summary(staging_location, database):
 
     try:
         db_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-        daily_count_query = f"""SELECT bird_amount, false_amount, undef_amount 
+        daily_count_query = f"""SELECT bird_amount, false_amount, undef_amount, visit_amount 
                                 FROM Image_statistics WHERE date_day = '{db_date}';"""
         count_cursor = database.cursor()
         count_cursor.execute(daily_count_query)
         count_result = count_cursor.fetchone()
 
-        (bird_count, false_count, undef_count) = count_result
+        (bird_count, false_count, undef_count, visit_count) = count_result
 
         header = f'Report {target_date}\n'
-        image_stat = f"Images taken: {sum(count_result)}\nBirds: {bird_count}\nFalse positives: {false_count}\nUndefined: {undef_count}"
-        bot.sendMessage(secrets['USER_ID'], header + image_stat)
+        image_stat = f"Images taken: {sum(count_result[0:2])}\nBirds: {bird_count}\nFalse positives: {false_count}\nUndefined: {undef_count}\n"
+        visit_stat = f"Total visits: {count_result[3]}"
+        bot.sendMessage(secrets['USER_ID'], header + image_stat + visit_stat)
 
         logging.info('\t\tSummary sent')
 
@@ -72,8 +73,8 @@ def send_summary(staging_location, database):
             except TypeError:
                 logging.error('ERROR: Cannot fetch image from database for daily summary')
 
-    except:
-        logging.error(f'ERROR: Cannot generate report')
+    except BaseException as e:
+        logging.error(f'ERROR: Cannot generate report: {e}')
         send_single_message(f"Problem sending daily report of {target_date}. Check logs or run pipeline with '-r' argument")
 
 
