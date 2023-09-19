@@ -8,7 +8,6 @@ import telepot
 from datetime import datetime, timedelta
 import logging
 import os
-import re
 
 
 def read_config():  # Load config

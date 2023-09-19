@@ -3,8 +3,10 @@
 Starting point for the pipeline that runs every night. It has four main functions:
 1) Add cached photos to the database
 2) Identify birds on pictures
-3) Calculate and group photos into visits - NEEDS ADJUSTMENT
+3) Calculate and group photos into visits
 4) Send a daily summary
+
+A minor function is monitoring disk space
 """
 
 # Import libraries
@@ -17,9 +19,9 @@ import logging
 from datetime import datetime, timedelta
 
 # Import Python scripts
-import saveImage
 import createVisits
 import message_sender
+import check_system
 
 # Open and load the config
 try:
@@ -29,11 +31,6 @@ except FileNotFoundError:
     logging.error("ERROR: Can't find config file at main pipeline level")
     sys.exit(0)
 
-# Check if necessary staging folders are present
-staging_dirs = ['Bird', 'False', 'undef']
-for d in staging_dirs:
-    if not os.path.isdir(os.path.join(pipeline_config['application']['staging_folder'], d)):
-        os.makedirs(os.path.join(pipeline_config['application']['staging_folder'], d))
 
 # Parse commandline options
 parser = argparse.ArgumentParser(
@@ -64,6 +61,11 @@ else:  # execute program if arguments are passed
 
     logging.info('START RUN - Arguments: %s', args)
 
+    # Carry out systems checks
+    check_system.empty_cache(pipeline_config['application']['cache_folder'])
+    check_system.staging_folders(pipeline_config['application']['staging_folder'])
+    check_system.available_disk_size()
+
 
     def connect_to_database():  # Open database connection
         """Open the connection to the database"""
@@ -84,8 +86,8 @@ else:  # execute program if arguments are passed
     ########################################
     # IDENTIFY AND SAVE IMAGES TO DATABASE #
     ########################################
-
     if args.save or args.all:  # Start saving photos to the database
+        import saveImage
         logging.info('Moving images from cache to staging')
 
         photo_cache = os.listdir(pipeline_config['application']['cache_folder'])
@@ -102,7 +104,6 @@ else:  # execute program if arguments are passed
     ####################
     # CALCULATE VISITS #
     ####################
-
     if args.visits or args.all:  # Calculate visits
         logging.info('Calculating and assigning visits.')
         createVisits.calculate(db)
@@ -110,7 +111,6 @@ else:  # execute program if arguments are passed
     #########################################
     # CREATE A SUMMARY AND SEND TO TELEGRAM #
     #########################################
-
     if args.recap or args.all:  # Send summarizing recap messages
         logging.info('Preparing to send a summary to Telegram')
 
@@ -161,8 +161,7 @@ else:  # execute program if arguments are passed
         finally:
             cursor.close()
 
-        message_sender.send_summary(pipeline_config['application']['staging_folder'],
-                                    db)
+        message_sender.send_summary(pipeline_config['application']['staging_folder'], db)
 
 
 logging.info('Ending run. Goodbye!')
